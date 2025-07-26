@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ইংরেজী অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "We work every day except Friday. What part of speech is 'except'?",
+          options: {
+            a: "adjective",
+            b: "conjunction",
+            c: "adverb",
+            d: "preposition",
+          },
+          correct: "d",
+          explanation:
+            "<p>'Except' শব্দটি এই বাক্যে 'Friday' (একটি noun) এর আগে বসেছে এবং 'every day' এর সাথে সম্পর্ক স্থাপন করছে, যা 'Friday' কে অন্তর্ভুক্ত না করার অর্থ প্রকাশ করে। এটি একটি Preposition এর কাজ।</p> <ul> <li><b>(A) Adjective:</b> Adjective একটি noun বা pronoun কে modify করে। যেমন: 'a beautiful day'. 'Except' এখানে কোনো noun কে modify করছে না।</li> <li><b>(B) Conjunction:</b> Conjunction দুটি শব্দ, বাক্য বা ক্লজকে যুক্ত করে। যেমন: 'and', 'but', 'or'. 'Except' এখানে বাক্য বা ক্লজকে যুক্ত করছে না।</li> <li><b>(C) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে। যেমন: 'He runs quickly'. 'Except' এখানে কোনো verb, adjective বা adverb কে modify করছে না।</li> <li><b>(D) Preposition:</b> Preposition একটি noun বা pronoun এর আগে বসে বাক্যের অন্য শব্দের সাথে তার সম্পর্ক স্থাপন করে। যেমন: 'on the table', 'in the box'. এখানে 'except Friday' মানে 'Friday' ছাড়া বা ব্যতিরেকে। এটি একটি অব্যয় পদ যা 'Friday' কে বাক্যের অন্যান্য অংশের সাথে সংযুক্ত করে এবং একটি ব্যতিক্রম নির্দেশ করে।</li> </ul> <p>সুতরাং, 'except' এই বাক্যে একটি Preposition হিসেবে ব্যবহৃত হয়েছে।</p>",
+        },
+        {
+          id: 2,
+          question: "What is adjective of 'Marriage'?",
+          options: {
+            a: "Married",
+            b: "Menstrual",
+            c: "Nuptial",
+            d: "Celestial",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Marriage' শব্দের অর্থ 'বিবাহ' বা 'বিয়ে'। এর Adjective রূপ হল যা বিবাহ সম্পর্কিত কোনো কিছুকে বোঝায়।</p> <ul> <li><b>(A) Married:</b> এটি 'বিবাহিত' অর্থে ব্যবহৃত হয় এবং এটি একটি Adjectiveও বটে, তবে এটি সাধারণত 'married couple' বা 'married life' এর মতো ফ্রেজে ব্যবহৃত হয়। 'Marriage' এর একটি প্রত্যক্ষ বিশেষণ নয়।</li> <li><b>(B) Menstrual:</b> এটি 'মাসিক' বা 'ঋতুস্রাব' সম্পর্কিত। এটি সম্পূর্ণ ভিন্ন অর্থ প্রকাশ করে।</li> <li><b>(C) Nuptial:</b> এর অর্থ 'বিবাহ সংক্রান্ত' বা 'বিবাহের'। এটি 'Marriage' এর সাথে সম্পর্কিত বিষয়গুলোকে বর্ণনা করতে ব্যবহৃত হয়, যেমন 'nuptial vows' (বিবাহের শপথ) বা 'nuptial ceremony' (বিবাহ অনুষ্ঠান)। এটি 'Marriage' এর সঠিক Adjective ফর্ম।</li> <li><b>(D) Celestial:</b> এর অর্থ 'স্বর্গীয়' বা 'আকাশ সম্পর্কিত'। এটি সম্পূর্ণ ভিন্ন অর্থ প্রকাশ করে।</li> </ul> <p>সুতরাং, 'Marriage' এর সঠিক Adjective ফর্ম হলো 'Nuptial' ।</p>",
+        },
+        {
+          id: 3,
+          question: "An antonym for 'Depressed' is-",
+          options: {
+            a: "Distressed",
+            b: "Encouraged",
+            c: "Crestfallen",
+            d: "Impressed",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Depressed' শব্দের অর্থ 'হতাশাগ্রস্ত', 'বিষণ্ণ' বা 'মনমরা'। এর বিপরীত শব্দ খুঁজতে হবে, যা ইতিবাচক বা চাঙ্গা ভাব বোঝায়।</p> <ul> <li><b>(A) Distressed:</b> এর অর্থ 'দুশ্চিন্তাগ্রস্ত' বা 'কষ্টে আছে'। এটি 'Depressed' এর প্রতিশব্দ বা কাছাকাছি অর্থ প্রকাশ করে।</li> <li><b>(B) Encouraged:</b> এর অর্থ 'উৎসাহিত' বা 'প্রফুল্ল'। এটি 'Depressed' এর বিপরীত অর্থ প্রকাশ করে। যে ব্যক্তি হতাশ, তার বিপরীত হলো যে উৎসাহিত বা চাঙ্গা অনুভব করছে।</li> <li><b>(C) Crestfallen:</b> এর অর্থ 'হতাশ' বা 'হতোদ্যম'। এটি 'Depressed' এর প্রতিশব্দ বা কাছাকাছি অর্থ প্রকাশ করে।</li> <li><b>(D) Impressed:</b> এর অর্থ 'মুগ্ধ' বা 'প্রভাবিত'। এটি মানসিক অবস্থা বোঝায় তবে 'Depressed' এর বিপরীত নয়।</li> </ul> <p>সুতরাং, 'Depressed' এর সঠিক বিপরীত শব্দ হলো 'Encouraged' ।</p>",
+        },
+        {
+          id: 4,
+          question: "The noun of the word 'Brief' is-",
+          options: {
+            a: "Briefly",
+            b: "Brevity",
+            c: "Brievement",
+            d: "Bravery",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Brief' একটি Adjective এবং Verb, যার অর্থ 'সংক্ষিপ্ত' বা 'সংক্ষেপ করা'। এর Noun ফর্ম খুঁজতে হবে যা 'সংক্ষিপ্ততা' বা 'সংক্ষেপ' বোঝায়।</p> <ul> <li><b>(A) Briefly:</b> এটি একটি Adverb, যার অর্থ 'সংক্ষেপে' বা 'অল্প সময়ের জন্য'।</li> <li><b>(B) Brevity:</b> এটি 'Brief' এর Noun ফর্ম, যার অর্থ 'সংক্ষিপ্ততা' বা 'অল্পতা'। যেমন: 'The brevity of his speech was appreciated.' (তার বক্তৃতার সংক্ষিপ্ততা প্রশংসিত হয়েছিল)।</li> <li><b>(C) Brievement:</b> এটি কোনো সঠিক ইংরেজি শব্দ নয়। (সম্ভবত 'bereavement' এর ভুল বানান, যার অর্থ শোক)।</li> <li><b>(D) Bravery:</b> এটি 'Brave' শব্দের Noun ফর্ম, যার অর্থ 'সাহসিকতা'। এটি সম্পূর্ণ ভিন্ন অর্থ প্রকাশ করে।</li> </ul> <p>সুতরাং, 'Brief' এর সঠিক Noun ফর্ম হলো 'Brevity' ।</p>",
+        },
+        {
+          id: 5,
+          question: "'Popular' is a/an -",
+          options: {
+            a: "Adjective",
+            b: "Adverb",
+            c: "Noun",
+            d: "Verb",
+          },
+          correct: "a",
+          explanation:
+            "<p>'Popular' শব্দের অর্থ 'জনপ্রিয়'। এটি সাধারণত কোনো ব্যক্তি বা বস্তুর গুণ বা বৈশিষ্ট্য বোঝাতে ব্যবহৃত হয়।</p> <ul> <li><b>(A) Adjective:</b> Adjective একটি noun বা pronoun এর গুণ, অবস্থা, সংখ্যা বা পরিমাণ নির্দেশ করে। 'Popular' একটি noun কে modify করে (যেমন: 'a popular song', 'a popular leader'), তাই এটি একটি Adjective।</li> <li><b>(B) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে। 'Popularly' হলে সেটি Adverb হতো (যেমন: 'popularly known')।</li> <li><b>(C) Noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়। 'Popularity' হলে সেটি Noun হতো।</li> <li><b>(D) Verb:</b> Verb কোনো কাজ করা বোঝায়। 'Popularize' হলে সেটি Verb হতো।</li> </ul> <p>সুতরাং, 'Popular' একটি Adjective ।</p>",
+        },
+        {
+          id: 6,
+          question: "Which word is both a noun and a verb?",
+          options: {
+            a: "believe",
+            b: "water",
+            c: "advice",
+            d: "maker",
+          },
+          correct: "b",
+          explanation:
+            "<p>এই প্রশ্নটি এমন একটি শব্দ জানতে চাইছে যা Noun এবং Verb উভয় রূপে ব্যবহার করা যায়।</p> <ul> <li><b>(A) Believe:</b> এটি একটি Verb (বিশ্বাস করা)। এর Noun ফর্ম হলো 'belief'।</li> <li><b>(B) Water:</b> এটি Noun (পানি) এবং Verb (পানি দেওয়া) উভয় রূপে ব্যবহার করা যায়।<br> - Noun: 'Drink some <b>water</b>.'<br> - Verb: 'Please <b>water</b> the plants.'</li> <li><b>(C) Advice:</b> এটি একটি Noun (উপদেশ)। এর Verb ফর্ম হলো 'advise'।</li> <li><b>(D) Maker:</b> এটি একটি Noun (নির্মাতা)। এটি Verb হিসেবে ব্যবহৃত হয় না।</li> </ul> <p>সুতরাং, 'water' শব্দটি Noun এবং Verb উভয় রূপে ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 7,
+          question: "It is our central library. The underlined word is a _.",
+          options: {
+            a: "Noun",
+            b: "Pronoun",
+            c: "Adjective",
+            d: "Preposition",
+          },
+          correct: "c",
+          explanation:
+            "<p>প্রদত্ত বাক্যে, 'central' শব্দটি 'library' (একটি Noun) কে modify করছে এবং লাইব্রেরির ধরন বা অবস্থান সম্পর্কে অতিরিক্ত তথ্য দিচ্ছে।</p> <ul> <li><b>(A) Noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়। 'Library' একটি Noun।</li> <li><b>(B) Pronoun:</b> Pronoun Noun এর পরিবর্তে বসে। যেমন: 'he', 'she', 'it'.</li> <li><b>(C) Adjective:</b> Adjective একটি Noun বা Pronoun কে modify করে এবং তার গুণ, অবস্থা, সংখ্যা বা পরিমাণ নির্দেশ করে। এখানে 'central' শব্দটি 'library' এর একটি বৈশিষ্ট্য বর্ণনা করছে, তাই এটি একটি Adjective।</li> <li><b>(D) Preposition:</b> Preposition একটি Noun বা Pronoun এর আগে বসে বাক্যের অন্য শব্দের সাথে তার সম্পর্ক স্থাপন করে।</li> </ul> <p>সুতরাং, 'central' একটি Adjective ।</p>",
+        },
+        {
+          id: 8,
+          question:
+            "What time did he get home last night? Here 'home' is a/an _",
+          options: {
+            a: "Noun",
+            b: "Adverb",
+            c: "Adjective",
+            d: "Verb",
+          },
+          correct: "b",
+          explanation:
+            "<p>এই বাক্যে, 'home' শব্দটি 'get' (একটি Verb) ক্রিয়াটিকে modify করছে এবং কোথায় গিয়েছিল (স্থান) তা বোঝাচ্ছে। যখন একটি শব্দ কোনো ক্রিয়াকে modify করে এবং স্থান, কাল, বা ধরন বোঝায়, তখন সেটি Adverb হয়।</p> <ul> <li><b>(A) Noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়। যদিও 'home' একটি Noun হতে পারে (যেমন: 'My home is far away'), এই বাক্যে এটি Noun হিসেবে কাজ করছে না।</li> <li><b>(B) Adverb:</b> Adverb একটি Verb কে modify করে। এখানে 'get home' মানে 'বাড়িতে পৌঁছানো' বা 'বাড়িতে যাওয়া'। 'Home' এখানে 'to home' এর পরিবর্তে ব্যবহৃত একটি Adverbial of place।</li> <li><b>(C) Adjective:</b> Adjective একটি Noun বা Pronoun কে modify করে।</li> <li><b>(D) Verb:</b> Verb কোনো কাজ করা বোঝায়।</li> </ul> <p>সুতরাং, এই বাক্যে 'home' একটি Adverb ।</p>",
+        },
+        {
+          id: 9,
+          question: "The adverb of 'Increase' is-",
+          options: {
+            a: "Increasel",
+            b: "Increasingly",
+            c: "Increasement",
+            d: "Incremently",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Increase' একটি Verb এবং Noun (বৃদ্ধি করা/বৃদ্ধি)। এর Adverb ফর্ম খুঁজতে হবে যা 'ক্রমবর্ধমানভাবে' বা 'বেড়ে চলা' অর্থে ব্যবহৃত হয়।</p> <ul> <li><b>(A) Increasel:</b> এটি কোনো সঠিক ইংরেজি শব্দ নয়।</li> <li><b>(B) Increasingly:</b> এটি 'Increase' এর Adverb ফর্ম, যার অর্থ 'ক্রমবর্ধমানভাবে' বা 'বেড়ে চলেছে এমনভাবে'। যেমন: 'The problem is becoming increasingly difficult.' (সমস্যাটি ক্রমশ কঠিন হচ্ছে)।</li> <li><b>(C) Increasement:</b> এটি কোনো সঠিক ইংরেজি শব্দ নয়। 'Increment' Noun হতে পারে, যার অর্থ 'বৃদ্ধি' বা 'বাড়তি অংশ'।</li> <li><b>(D) Incremently:</b> এটিও কোনো সঠিক ইংরেজি শব্দ নয়।</li> </ul> <p>সুতরাং, 'Increase' এর সঠিক Adverb ফর্ম হলো 'Increasingly' ।</p>",
+        },
+        {
+          id: 10,
+          question: "What is the verb form of 'false'?",
+          options: {
+            a: "falsificate",
+            b: "falsify",
+            c: "falsitite",
+            d: "enfalse",
+          },
+          correct: "b",
+          explanation:
+            "<p>'False' একটি Adjective, যার অর্থ 'মিথ্যা' বা 'ভুল'। এর Verb ফর্ম খুঁজতে হবে যার অর্থ 'মিথ্যা প্রমাণ করা' বা 'মিথ্যা বানানো'।</p> <ul> <li><b>(A) Falsificate:</b> এটি একটি অপ্রচলিত বা ভুল শব্দ। সঠিক শব্দটি হলো 'falsify'।</li> <li><b>(B) Falsify:</b> এটি 'False' এর সঠিক Verb ফর্ম, যার অর্থ 'মিথ্যা প্রমাণিত করা', 'বিকৃত করা' বা 'মিথ্যা তথ্য দেওয়া'। যেমন: 'He was accused of falsifying the documents.' (তাকে কাগজপত্র জাল করার অভিযোগ আনা হয়েছিল)।</li> <li><b>(C) Falsitite:</b> এটি কোনো সঠিক ইংরেজি শব্দ নয়।</li> <li><b>(D) Enfalse:</b> এটি কোনো সঠিক ইংরেজি শব্দ নয়।</li> </ul> <p>সুতরাং, 'False' এর সঠিক Verb ফর্ম হলো 'Falsify' ।</p>",
+        },
+        {
+          id: 11,
+          question: "The verb form of the word 'able' is -",
+          options: {
+            a: "unable",
+            b: "enable",
+            c: "ably",
+            d: "ability",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Able' একটি Adjective, যার অর্থ 'সক্ষম' বা 'পারদর্শী'। এর Verb ফর্ম খুঁজতে হবে যার অর্থ 'সক্ষম করা' বা 'যোগ্য করে তোলা'।</p> <ul> <li><b>(A) Unable:</b> এটি 'able' এর বিপরীত Adjective, যার অর্থ 'অক্ষম'।</li> <li><b>(B) Enable:</b> এটি 'able' এর সঠিক Verb ফর্ম, যার অর্থ 'সক্ষম করা' বা 'সুযোগ করে দেওয়া'। যেমন: 'Technology enables us to communicate globally.' (প্রযুক্তি আমাদের বিশ্বব্যাপী যোগাযোগ করতে সক্ষম করে)।</li> <li><b>(C) Ably:</b> এটি 'able' এর Adverb ফর্ম, যার অর্থ 'সক্ষমভাবে' বা 'দক্ষতার সাথে'।</li> <li><b>(D) Ability:</b> এটি 'able' এর Noun ফর্ম, যার অর্থ 'ক্ষমতা' বা 'দক্ষতা'।</li> </ul> <p>সুতরাং, 'able' এর সঠিক Verb ফর্ম হলো 'enable' ।</p>",
+        },
+        {
+          id: 12,
+          question: "The noun of 'Predict' is -",
+          options: {
+            a: "Prediction",
+            b: "Predicted",
+            c: "Predictable",
+            d: "Predicting",
+          },
+          correct: "a",
+          explanation:
+            "<p>'Predict' একটি Verb, যার অর্থ 'ভবিষ্যদ্বাণী করা' বা 'পূর্বাভাস দেওয়া'। এর Noun ফর্ম খুঁজতে হবে যার অর্থ 'ভবিষ্যদ্বাণী' বা 'পূর্বাভাস'।</p> <ul> <li><b>(A) Prediction:</b> এটি 'Predict' এর সঠিক Noun ফর্ম, যার অর্থ 'ভবিষ্যদ্বাণী' বা 'পূর্বাভাস'। যেমন: 'The weather prediction was accurate.' (আবহাওয়ার পূর্বাভাস সঠিক ছিল)।</li> <li><b>(B) Predicted:</b> এটি 'Predict' এর Past Tense Verb বা Past Participle Adjective।</li> <li><b>(C) Predictable:</b> এটি 'Predict' এর Adjective ফর্ম, যার অর্থ 'পূর্বাভাসযোগ্য' বা 'অনুমেয়'।</li> <li><b>(D) Predicting:</b> এটি 'Predict' এর Present Participle Verb বা Gerund Noun।</li> </ul> <p>সুতরাং, 'Predict' এর সঠিক Noun ফর্ম হলো 'Prediction' ।</p>",
+        },
+        {
+          id: 13,
+          question: "What is the noun of the word 'vain'?",
+          options: {
+            a: "Vainly",
+            b: "Vein",
+            c: "Vanity",
+            d: "Vain",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Vain' একটি Adjective, যার অর্থ 'অহংকারী', 'দর্পী' বা 'বৃথা'। এর Noun ফর্ম খুঁজতে হবে যা 'অহংকার' বা 'দর্প' বোঝায়।</p> <ul> <li><b>(A) Vainly:</b> এটি 'Vain' এর Adverb ফর্ম, যার অর্থ 'বৃথাভাবে' বা 'অহংকারের সাথে'।</li> <li><b>(B) Vein:</b> এটি একটি Noun, যার অর্থ 'শিরা' বা 'রগ'। এটি সম্পূর্ণ ভিন্ন অর্থ প্রকাশ করে এবং 'Vain' এর সাথে সম্পর্কিত নয়।</li> <li><b>(C) Vanity:</b> এটি 'Vain' এর সঠিক Noun ফর্ম, যার অর্থ 'অহংকার', 'দর্প', 'মিথ্যা গৌরব' বা 'সারহীনতা'। যেমন: 'Her vanity was her biggest flaw.' (তার অহংকার ছিল তার সবচেয়ে বড় ত্রুটি)।</li> <li><b>(D) Vain:</b> এটি Adjective নিজেই, Noun নয়।</li> </ul> <p>সুতরাং, 'Vain' এর সঠিক Noun ফর্ম হলো 'Vanity' ।</p>",
+        },
+        {
+          id: 14,
+          question:
+            "What parts of speech is 'massive' in the phrase 'massive diasporas'?",
+          options: {
+            a: "verb",
+            b: "adverb",
+            c: "noun",
+            d: "adjective",
+          },
+          correct: "d",
+          explanation:
+            "<p>প্রদত্ত ফ্রেজে, 'massive' শব্দটি 'diasporas' (একটি Noun) কে modify করছে এবং 'diasporas' এর আকার বা পরিমাণ সম্পর্কে অতিরিক্ত তথ্য দিচ্ছে।</p> <ul> <li><b>(A) Verb:</b> Verb কোনো কাজ করা বোঝায়।</li> <li><b>(B) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে।</li> <li><b>(C) Noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়। 'Diasporas' একটি Noun।</li> <li><b>(D) Adjective:</b> Adjective একটি Noun বা Pronoun কে modify করে এবং তার গুণ, অবস্থা, সংখ্যা বা পরিমাণ নির্দেশ করে। এখানে 'massive' শব্দটি 'diasporas' এর একটি বৈশিষ্ট্য বর্ণনা করছে, তাই এটি একটি Adjective।</li> </ul> <p>সুতরাং, 'massive' একটি Adjective ।</p>",
+        },
+        {
+          id: 15,
+          question: "Which one is the correct adjective form of 'cognition'?",
+          options: {
+            a: "Correction",
+            b: "Recognizing",
+            c: "Cognitivizing",
+            d: "Cognitive",
+          },
+          correct: "d",
+          explanation:
+            "<p>'Cognition' একটি Noun, যার অর্থ 'জ্ঞান', 'উপলব্ধি' বা 'অনুভব'। এর Adjective ফর্ম খুঁজতে হবে যা জ্ঞান বা উপলব্ধির সাথে সম্পর্কিত।</p> <ul> <li><b>(A) Correction:</b> এটি 'Correct' এর Noun ফর্ম, যার অর্থ 'সংশোধন'। এটি সম্পূর্ণ ভিন্ন অর্থ প্রকাশ করে।</li> <li><b>(B) Recognizing:</b> এটি 'Recognize' এর Present Participle বা Gerund। 'Recognize' মানে 'শনাক্ত করা'।</li> <li><b>(C) Cognitivizing:</b> এটি কোনো সঠিক ইংরেজি শব্দ নয়।</li> <li><b>(D) Cognitive:</b> এটি 'Cognition' এর সঠিক Adjective ফর্ম, যার অর্থ 'জ্ঞানীয়' বা 'উপলব্ধিমূলক'। যেমন: 'cognitive abilities' (জ্ঞানীয় ক্ষমতা)।</li> </ul> <p>সুতরাং, 'cognition' এর সঠিক Adjective ফর্ম হলো 'Cognitive' ।</p>",
+        },
+        {
+          id: 16,
+          question: "Which part of speech is the word 'imitative'?",
+          options: {
+            a: "Interjection",
+            b: "Adjective",
+            c: "Adverb",
+            d: "Verb",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Imitative' শব্দের অর্থ 'অনুকরণমূলক' বা 'নকলকারী'। এটি সাধারণত কোনো কিছু বা কারো অনুকরণের প্রবণতা বা গুণ বোঝাতে ব্যবহৃত হয়।</p> <ul> <li><b>(A) Interjection:</b> Interjection হলো আবেগ বা বিস্ময় প্রকাশ করার জন্য ব্যবহৃত শব্দ। যেমন: 'Oh!', 'Wow!'.</li> <li><b>(B) Adjective:</b> Adjective একটি noun বা pronoun কে modify করে এবং তার গুণ, অবস্থা, সংখ্যা বা পরিমাণ নির্দেশ করে। 'Imitative' কোনো Noun কে modify করে (যেমন: 'imitative art', 'imitative behavior'), তাই এটি একটি Adjective।</li> <li><b>(C) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে। 'Imitatively' হলে সেটি Adverb হতো।</li> <li><b>(D) Verb:</b> Verb কোনো কাজ করা বোঝায়। 'Imitate' হলে সেটি Verb হতো।</li> </ul> <p>সুতরাং, 'imitative' একটি Adjective ।</p>",
+        },
+        {
+          id: 17,
+          question:
+            "'I stand before you today with a heart overflowing with grief.' The underlined part is-",
+          options: {
+            a: "a pre-modifier",
+            b: "a post-modifier",
+            c: "an adverb",
+            d: "an appositive",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে আন্ডারলাইন করা অংশটি হলো 'overflowing with grief'। এই অংশটি 'a heart' (একটি Noun Phrase) কে modify করছে এবং 'heart' এর অবস্থা সম্পর্কে অতিরিক্ত তথ্য দিচ্ছে। যেহেতু এটি Noun Phrase এর পরে বসেছে, তাই এটি একটি Post-modifier।</p> <ul> <li><b>(A) A pre-modifier:</b> Pre-modifier Noun এর আগে বসে Noun কে modify করে। যেমন: 'a <i>red</i> car'.</li> <li><b>(B) A post-modifier:</b> Post-modifier Noun এর পরে বসে Noun কে modify করে। এই ক্ষেত্রে, 'overflowing with grief' একটি Present Participle Phrase যা 'heart' কে বর্ণনা করছে।</li> <li><b>(C) An adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে। এটি এখানে 'heart' কে modify করছে, যা Noun।</li> <li><b>(D) An appositive:</b> Appositive একটি Noun বা Noun Phrase যা অন্য একটি Noun বা Noun Phrase এর পাশে বসে সেটিকে ব্যাখ্যা বা পুনরায় নামকরণ করে। যেমন: 'My friend, <i>the doctor</i>, came to visit.'</li> </ul> <p>সুতরাং, 'overflowing with grief' একটি Post-modifier।</p>",
+        },
+        {
+          id: 18,
+          question: "Let us winter in Malaysia. Here 'winter' is-",
+          options: {
+            a: "a noun",
+            b: "an adjective",
+            c: "an adverb",
+            d: "a verb",
+          },
+          correct: "d",
+          explanation:
+            "<p>এই বাক্যে 'winter' শব্দটি একটি ক্রিয়া হিসেবে ব্যবহৃত হয়েছে। 'Let us winter in Malaysia' মানে 'এসো আমরা মালয়েশিয়াতে শীতকাল কাটাই' বা 'শীতকালে মালয়েশিয়াতে অবস্থান করি'। এখানে 'winter' কাজটি করার অর্থে ব্যবহৃত হয়েছে।</p> <ul> <li><b>(A) A noun:</b> Noun হিসেবে 'winter' মানে 'শীতকাল' (যেমন: 'Winter is cold'). এই বাক্যে এটি Noun হিসেবে কাজ করছে না।</li> <li><b>(B) An adjective:</b> Adjective একটি noun বা pronoun কে modify করে।</li> <li><b>(C) An adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে।</li> <li><b>(D) A verb:</b> Verb কোনো কাজ করা বা অবস্থা বোঝায়। এখানে 'winter' শব্দটি 'to spend the winter' (শীতকাল কাটানো) অর্থে ব্যবহৃত হয়েছে, যা একটি ক্রিয়া।</li> </ul> <p>সুতরাং, এই বাক্যে 'winter' একটি Verb ।</p>",
+        },
+        {
+          id: 19,
+          question: "The programme was broadcast live. Here 'live' is-",
+          options: {
+            a: "a noun",
+            b: "a verb",
+            c: "an adjective",
+            d: "an adverb",
+          },
+          correct: "d",
+          explanation:
+            "<p>এই বাক্যে 'live' শব্দটি 'broadcast' (একটি Verb) ক্রিয়াটিকে modify করছে এবং সম্প্রচারের ধরন (সরাসরি) বোঝাচ্ছে। যখন একটি শব্দ কোনো ক্রিয়াকে modify করে এবং ধরন, কাল, বা স্থান বোঝায়, তখন সেটি Adverb হয়।</p> <ul> <li><b>(A) A noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়। 'Live' Noun হতে পারে (যেমন: 'a live concert'), কিন্তু এই বাক্যে তা নয়।</li> <li><b>(B) A verb:</b> Verb কোনো কাজ করা বোঝায়। 'Live' Verb হতে পারে (যেমন: 'They live in Dhaka'), কিন্তু এই বাক্যে তা নয়।</li> <li><b>(C) An adjective:</b> Adjective একটি noun বা pronoun কে modify করে। 'Live' Adjective হতে পারে (যেমন: 'a live performance'), কিন্তু এখানে এটি 'broadcast' কে modify করছে।</li> <li><b>(D) An adverb:</b> Adverb একটি Verb কে modify করে। এখানে 'broadcast live' মানে 'সরাসরি সম্প্রচার করা হয়েছে'। এটি সম্প্রচারের ধরন নির্দেশ করছে।</li> </ul> <p>সুতরাং, এই বাক্যে 'live' একটি Adverb ।</p>",
+        },
+        {
+          id: 20,
+          question: "May you live long. Here 'long' is a/an-",
+          options: {
+            a: "adjective",
+            b: "noun",
+            c: "determiner",
+            d: "adverb",
+          },
+          correct: "d",
+          explanation:
+            "<p>এই বাক্যে 'long' শব্দটি 'live' (একটি Verb) ক্রিয়াটিকে modify করছে এবং কতক্ষণ বাঁচবে (সময়কাল) তা বোঝাচ্ছে। যখন একটি শব্দ কোনো ক্রিয়াকে modify করে এবং ধরন, কাল, বা স্থান বোঝায়, তখন সেটি Adverb হয়।</p> <ul> <li><b>(A) Adjective:</b> Adjective একটি noun বা pronoun কে modify করে। 'Long' Adjective হতে পারে (যেমন: 'a long road'), কিন্তু এখানে এটি 'live' কে modify করছে।</li> <li><b>(B) Noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়।</li> <li><b>(C) Determiner:</b> Determiner একটি Noun এর আগে বসে সেটিকে নির্দিষ্ট বা অনির্দিষ্ট করে তোলে। যেমন: 'the', 'a', 'my'.</li> <li><b>(D) Adverb:</b> Adverb একটি Verb কে modify করে। এখানে 'live long' মানে 'দীর্ঘদিন বাঁচা'। এটি 'live' ক্রিয়াটির সময়কাল নির্দেশ করছে।</li> </ul> <p>সুতরাং, এই বাক্যে 'long' একটি Adverb ।</p>",
+        },
+        {
+          id: 21,
+          question: "Which of the following words is a noun?",
+          options: {
+            a: "Ordain",
+            b: "Imprimatur",
+            c: "Pontificate",
+            d: "Ricochet",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমাদেরকে এমন একটি শব্দ খুঁজে বের করতে হবে যা Noun হিসেবে ব্যবহৃত হয়।</p> <ul> <li><b>(A) Ordain:</b> এটি একটি Verb, যার অর্থ 'নিয়োজিত করা' বা 'বিধান করা'। যেমন: 'He was ordained as a priest.'</li> <li><b>(B) Imprimatur:</b> এটি একটি Noun, যার অর্থ 'আনুষ্ঠানিক অনুমোদন' বা 'স্বীকৃতি'। যেমন: 'The project received the imprimatur of the committee.' (প্রজেক্টটি কমিটির অনুমোদন পেয়েছে)।</li> <li><b>(C) Pontificate:</b> এটি একটি Verb, যার অর্থ 'দম্ভপূর্ণভাবে কথা বলা' বা 'পণ্ডিতি করা'। Noun হিসেবেও এটি ব্যবহৃত হতে পারে, তবে 'pontification' বেশি প্রচলিত।</li> <li><b>(D) Ricochet:</b> এটি একটি Verb, যার অর্থ 'উল্টে ফিরে আসা' বা 'ছিটকে আসা'। Noun হিসেবেও এটি ব্যবহৃত হতে পারে, তবে মূলত এটি Verb হিসেবেই বেশি পরিচিত।</li> </ul> <p>উপরিউক্ত শব্দগুলোর মধ্যে 'Imprimatur' প্রধানত একটি Noun হিসেবেই ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 22,
+          question: "The noun of 'bore' is-",
+          options: {
+            a: "boring",
+            b: "bores",
+            c: "bored",
+            d: "boredom",
+          },
+          correct: "d",
+          explanation:
+            "<p>'Bore' একটি Verb, যার অর্থ 'বিরক্ত করা'। এর Noun ফর্ম খুঁজতে হবে যা 'বিরক্তি' বা 'একঘেয়েমি' বোঝায়।</p> <ul> <li><b>(A) Boring:</b> এটি 'Bore' এর Present Participle Adjective, যার অর্থ 'বিরক্তিকর'।</li> <li><b>(B) Bores:</b> এটি 'Bore' এর Third Person Singular Present Simple Verb ফর্ম।</li> <li><b>(C) Bored:</b> এটি 'Bore' এর Past Participle Adjective, যার অর্থ 'বিরক্ত'।</li> <li><b>(D) Boredom:</b> এটি 'Bore' এর সঠিক Noun ফর্ম, যার অর্থ 'বিরক্তি' বা 'একঘেয়েমি'। যেমন: 'He suffered from boredom during the long lecture.' (লম্বা বক্তৃতার সময় সে একঘেয়েমিতে ভুগছিল)।</li> </ul> <p>সুতরাং, 'Bore' এর সঠিক Noun ফর্ম হলো 'Boredom' ।</p>",
+        },
+        {
+          id: 23,
+          question: "The noun of 'excite' is -",
+          options: {
+            a: "excitable",
+            b: "exciting",
+            c: "excited",
+            d: "excitement",
+          },
+          correct: "d",
+          explanation:
+            "<p>'Excite' একটি Verb, যার অর্থ 'উত্তেজিত করা'। এর Noun ফর্ম খুঁজতে হবে যা 'উত্তেজনা' বোঝায়।</p> <ul> <li><b>(A) Excitable:</b> এটি 'Excite' এর Adjective ফর্ম, যার অর্থ 'easily excited' (সহজেই উত্তেজিত হয় এমন)।</li> <li><b>(B) Exciting:</b> এটি 'Excite' এর Present Participle Adjective, যার অর্থ 'উত্তেজনাপূর্ণ'।</li> <li><b>(C) Excited:</b> এটি 'Excite' এর Past Participle Adjective, যার অর্থ 'উত্তেজিত'।</li> <li><b>(D) Excitement:</b> এটি 'Excite' এর সঠিক Noun ফর্ম, যার অর্থ 'উত্তেজনা' বা 'আনন্দ'। যেমন: 'There was great excitement in the air.' (বাতাসে ব্যাপক উত্তেজনা ছিল)।</li> </ul> <p>সুতরাং, 'Excite' এর সঠিক Noun ফর্ম হলো 'Excitement' ।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "An elected member can take the decision. The bold-faced word is used as a/an-",
+          options: {
+            a: "verb",
+            b: "adjective",
+            c: "conjunction",
+            d: "adverb",
+          },
+          correct: "b",
+          explanation:
+            "<p>এখানে আন্ডারলাইন করা শব্দটি হলো 'elected'। এই শব্দটি 'member' (একটি Noun) কে modify করছে এবং সদস্যের ধরন (যিনি নির্বাচিত হয়েছেন) সম্পর্কে অতিরিক্ত তথ্য দিচ্ছে। 'Elected' এখানে Past Participle হিসেবে ব্যবহৃত হয়েছে এবং Adjective এর কাজ করছে।</p> <ul> <li><b>(A) Verb:</b> Verb কোনো কাজ করা বোঝায়। 'Elect' হলো Verb।</li> <li><b>(B) Adjective:</b> Adjective একটি Noun বা Pronoun কে modify করে। এখানে 'elected' শব্দটি 'member' কে গুণান্বিত করছে।</li> <li><b>(C) Conjunction:</b> Conjunction দুটি শব্দ, বাক্য বা ক্লজকে যুক্ত করে।</li> <li><b>(D) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে।</li> </ul> <p>সুতরাং, 'elected' একটি Adjective হিসেবে ব্যবহৃত হয়েছে।</p>",
+        },
+        {
+          id: 25,
+          question: "The word 'tormentor' is _.",
+          options: {
+            a: "a noun",
+            b: "adverb",
+            c: "an verb",
+            d: "adjective",
+          },
+          correct: "a",
+          explanation:
+            "<p>'Tormentor' শব্দের অর্থ 'যন্ত্রণাদানকারী' বা 'নির্যাতনকারী'। এটি এমন একজন ব্যক্তিকে বোঝায় যে অন্যকে যন্ত্রণা দেয়। ব্যক্তিবাচক শব্দগুলো সাধারণত Noun হয়।</p> <ul> <li><b>(A) A noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়। 'Tormentor' একটি ব্যক্তিবাচক Noun।</li> <li><b>(B) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে।</li> <li><b>(C) An verb:</b> Verb কোনো কাজ করা বোঝায়। 'Torment' হলো Verb।</li> <li><b>(D) Adjective:</b> Adjective একটি noun বা pronoun কে modify করে। 'Tormenting' বা 'tormented' Adjective হতে পারে।</li> </ul> <p>সুতরাং, 'tormentor' একটি Noun ।</p>",
+        },
+        {
+          id: 26,
+          question: "The word-category of 'Foment' is-",
+          options: {
+            a: "adjective",
+            b: "verb",
+            c: "noun",
+            d: "adverb",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Foment' শব্দের অর্থ 'উস্কানি দেওয়া', 'উদ্দীপিত করা' বা 'জ্বালানি দেওয়া'। এটি সাধারণত কোনো খারাপ বা অবাঞ্ছিত কিছু শুরু করা বা উৎসাহিত করা বোঝায়। এটি একটি ক্রিয়া পদ।</p> <ul> <li><b>(A) Adjective:</b> Adjective একটি noun বা pronoun কে modify করে।</li> <li><b>(B) Verb:</b> Verb কোনো কাজ করা বোঝায়। 'Foment' একটি ক্রিয়া, যেমন: 'to foment trouble' (সমস্যা সৃষ্টি করা)।</li> <li><b>(C) Noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়। 'Fomentation' Noun হতে পারে।</li> <li><b>(D) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে।</li> </ul> <p>সুতরাং, 'Foment' একটি Verb ।</p>",
+        },
+        {
+          id: 27,
+          question: "The verb form of the noun 'Humanity' is-",
+          options: {
+            a: "Human",
+            b: "Humane",
+            c: "Humanitarian",
+            d: "Humanize",
+          },
+          correct: "d",
+          explanation:
+            "<p>'Humanity' একটি Noun, যার অর্থ 'মানবতা' বা 'মানুষের গুণাবলী'। এর Verb ফর্ম খুঁজতে হবে যার অর্থ 'মানবীয় করা' বা 'মানুষের মতো গুণাবলী দেওয়া'।</p> <ul> <li><b>(A) Human:</b> এটি Noun (মানুষ) বা Adjective (মানবীয়)।</li> <li><b>(B) Humane:</b> এটি একটি Adjective, যার অর্থ 'মানবীয়', 'দয়ালু' বা 'সহানুভূতিশীল'।</li> <li><b>(C) Humanitarian:</b> এটি Noun (মানবতাবাদী) বা Adjective (মানবতাবাদী বিষয়ক)।</li> <li><b>(D) Humanize:</b> এটি 'Humanity' এর সঠিক Verb ফর্ম, যার অর্থ 'মানবীয় করা' বা 'মানুষের মতো গুণাবলী দেওয়া'। যেমন: 'The artist tried to humanize the abstract concept.' (শিল্পী বিমূর্ত ধারণাটিকে মানবীয় করার চেষ্টা করেছিলেন)।</li> </ul> <p>সুতরাং, 'Humanity' এর সঠিক Verb ফর্ম হলো 'Humanize' ।</p>",
+        },
+        {
+          id: 28,
+          question: "The verb form of the noun 'Origin' is-",
+          options: {
+            a: "Original",
+            b: "Originated",
+            c: "Origination",
+            d: "Originate",
+          },
+          correct: "d",
+          explanation:
+            "<p>'Origin' একটি Noun, যার অর্থ 'উৎস' বা 'উৎপত্তি'। এর Verb ফর্ম খুঁজতে হবে যার অর্থ 'উৎপন্ন হওয়া' বা 'শুরু হওয়া'।</p> <ul> <li><b>(A) Original:</b> এটি Adjective (মৌলিক) বা Noun (মূল)।</li> <li><b>(B) Originated:</b> এটি 'Originate' এর Past Tense Verb বা Past Participle Adjective।</li> <li><b>(C) Origination:</b> এটি 'Originate' এর Noun ফর্ম, যার অর্থ 'উৎপত্তি' বা 'সৃষ্টি'।</li> <li><b>(D) Originate:</b> এটি 'Origin' এর সঠিক Verb ফর্ম, যার অর্থ 'উৎপন্ন হওয়া', 'শুরু হওয়া' বা 'উৎস থেকে আসা'। যেমন: 'The river originates from the mountains.' (নদীটি পর্বত থেকে উৎপন্ন হয়েছে)।</li> </ul> <p>সুতরাং, 'Origin' এর সঠিক Verb ফর্ম হলো 'Originate' ।</p>",
+        },
+        {
+          id: 29,
+          question: "Which of the following words is a verb?",
+          options: {
+            a: "Joyously",
+            b: "Glorify",
+            c: "Horrible",
+            d: "Idiocy",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমাদেরকে এমন একটি শব্দ খুঁজে বের করতে হবে যা Verb হিসেবে ব্যবহৃত হয়।</p> <ul> <li><b>(A) Joyously:</b> এটি একটি Adverb, যার অর্থ 'আনন্দের সাথে'। এর Noun হলো 'joy', Adjective হলো 'joyful'।</li> <li><b>(B) Glorify:</b> এটি একটি Verb, যার অর্থ 'মহিমান্বিত করা' বা 'প্রশংসা করা'। যেমন: 'We glorify God.' (আমরা ঈশ্বরের মহিমা বর্ণনা করি)।</li> <li><b>(C) Horrible:</b> এটি একটি Adjective, যার অর্থ 'ভয়ানক' বা 'ভয়াবহ'। এর Noun হলো 'horror'।</li> <li><b>(D) Idiocy:</b> এটি একটি Noun, যার অর্থ 'নির্বুদ্ধিতা' বা 'বোকা কাজ'। এর Adjective হলো 'idiotic'।</li> </ul> <p>সুতরাং, 'Glorify' একটি Verb ।</p>",
+        },
+        {
+          id: 30,
+          question: "Which of the following underlined words is a verb?",
+          options: {
+            a: "I can <u>assure</u> you.",
+            b: "He is dependent on me.",
+            c: "We stood silently.",
+            d: "It gave me trouble.",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমাদেরকে এমন বাক্য খুঁজে বের করতে হবে যেখানে আন্ডারলাইন করা শব্দটি Verb।</p> <ul> <li><b>(A) I can <u>assure</u> you:</b> এখানে 'assure' শব্দের অর্থ 'নিশ্চিত করা', যা একটি কাজ এবং এটি একটি Verb। 'Can' একটি Modal Verb, এবং এর পরে মূল Verb আসে।</li> <li><b>(B) He is <u>dependent</u> on me:</b> এখানে 'dependent' শব্দের অর্থ 'নির্ভরশীল', যা একটি Adjective। 'Is' হলো Linking Verb।</li> <li><b>(C) We <u>stood</u> silently:</b> এখানে 'stood' শব্দের অর্থ 'দাঁড়িয়েছিল', যা 'stand' এর Past Tense এবং একটি Verb। কিন্তু আন্ডারলাইন করা শব্দ 'silently' হলে সেটা Adverb হতো। প্রশ্ন অনুযায়ী, আন্ডারলাইন করা শব্দ 'stood' হলে এটি সঠিক উত্তর। কিন্তু যদি 'silently' আন্ডারলাইন করা হয় তবে এটি ভুল। যেহেতু বিকল্পগুলোর মধ্যে একমাত্র 'assure' নিশ্চিতভাবে একটি Verb হিসেবে আন্ডারলাইন করা সম্ভব, আমরা ধরে নিচ্ছি এখানে 'assure' আন্ডারলাইন করা আছে। (যদি 'stood' আন্ডারলাইন করা থাকতো, তবে সেটিও সঠিক উত্তর হতো)।</li> <li><b>(D) It <u>gave</u> me trouble:</b> এখানে 'gave' শব্দের অর্থ 'দিয়েছিল', যা 'give' এর Past Tense এবং একটি Verb। এখানেও যদি 'gave' আন্ডারলাইন করা হয় তবে সেটি সঠিক। তবে, বিকল্পগুলো থেকে 'assure' বেশি সুস্পষ্টভাবে একটি Verb হিসেবে ব্যবহৃত হয়েছে।</li> </ul> <p>প্রদত্ত অপশনগুলোর মধ্যে সবচেয়ে স্পষ্ট Verb হিসেবে 'assure' বিদ্যমান। যদি প্রশ্নটি শুধুমাত্র আন্ডারলাইন করা শব্দ নিয়ে হয়, তাহলে 'assure' হল সঠিক। যদি একাধিক Verb থাকে, তাহলে যেটিতে আন্ডারলাইন করা হয়েছে, সেটাই দেখতে হবে। যেহেতু কোনো আন্ডারলাইন নেই, তাই আমরা সবচেয়ে স্পষ্ট অপশনটি বেছে নিচ্ছি।</p>",
+        },
+        {
+          id: 31,
+          question:
+            "Which of the following sentences uses 'right' as an adjective?",
+          options: {
+            a: "Serve him right.",
+            b: "He is right man for the job.",
+            c: "It is such a fault that will right itself.",
+            d: "It is a matter of right.",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমাদেরকে এমন বাক্য খুঁজে বের করতে হবে যেখানে 'right' Adjective হিসেবে ব্যবহৃত হয়েছে। Adjective একটি Noun বা Pronoun কে modify করে।</p> <ul> <li><b>(A) Serve him right:</b> এখানে 'right' Adverb হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'যোগ্য শাস্তি দেওয়া' বা 'ঠিকঠাকভাবে'।</li> <li><b>(B) He is <u>right</u> man for the job:</b> এখানে 'right' শব্দটি 'man' (একটি Noun) কে modify করছে এবং 'সঠিক ব্যক্তি' বোঝাচ্ছে। এটি একটি Adjective। (লক্ষ্য করুন, 'the right man' হতো ব্যাকরণগতভাবে সঠিক)।</li> <li><b>(C) It is such a fault that will right itself:</b> এখানে 'right' Verb হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'সঠিক করা' বা 'শুদ্ধ করা'।</li> <li><b>(D) It is a matter of right:</b> এখানে 'right' Noun হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'অধিকার'।</li> </ul> <p>সুতরাং, 'He is right man for the job' বাক্যে 'right' Adjective হিসেবে ব্যবহৃত হয়েছে।</p>",
+        },
+        {
+          id: 32,
+          question:
+            "The word 'Still' is used as an adjective in which of the following sentences?",
+          options: {
+            a: "He heard a shrill cry in the still of night.",
+            b: "Mothers still their babies with a lulling song.",
+            c: "Mosquitoes lay eggs in still water.",
+            d: "He is still in idleness.",
+          },
+          correct: "c",
+          explanation:
+            "<p>আমাদেরকে এমন বাক্য খুঁজে বের করতে হবে যেখানে 'Still' Adjective হিসেবে ব্যবহৃত হয়েছে। Adjective একটি Noun বা Pronoun কে modify করে।</p> <ul> <li><b>(A) He heard a shrill cry in the <u>still</u> of night:</b> এখানে 'still' Noun হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'নিস্তব্ধতা' বা 'শান্তি'। ('the still of night' মানে রাতের নিস্তব্ধতা)।</li> <li><b>(B) Mothers <u>still</u> their babies with a lulling song:</b> এখানে 'still' Verb হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'শান্ত করা' বা 'চুপ করানো'।</li> <li><b>(C) Mosquitoes lay eggs in <u>still</u> water:</b> এখানে 'still' শব্দটি 'water' (একটি Noun) কে modify করছে এবং 'স্থির' বা 'অচল' পানি বোঝাচ্ছে। এটি একটি Adjective।</li> <li><b>(D) He is <u>still</u> in idleness:</b> এখানে 'still' Adverb হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'এখনও' বা 'এখনো পর্যন্ত'।</li> </ul> <p>সুতরাং, 'Mosquitoes lay eggs in still water' বাক্যে 'still' Adjective হিসেবে ব্যবহৃত হয়েছে।</p>",
+        },
+        {
+          id: 33,
+          question:
+            "Which of the following sentences uses 'what' as an Interrogative Adjective?",
+          options: {
+            a: "What you don't mean to say so?",
+            b: "Give me what you can.",
+            c: "What book do you want?",
+            d: "What do you want?",
+          },
+          correct: "c",
+          explanation:
+            "<p>Interrogative Adjective হলো এমন একটি Adjective যা Noun এর আগে বসে প্রশ্ন করতে ব্যবহৃত হয়। এটি Noun কে নির্দেশ করে বা Noun সম্পর্কে প্রশ্ন করে।</p> <ul> <li><b>(A) What you don't mean to say so?:</b> এখানে 'What' একটি Interjection বা Adverb হিসেবে ব্যবহৃত হয়েছে, বিস্ময় প্রকাশ করতে।</li> <li><b>(B) Give me what you can:</b> এখানে 'what' Relative Pronoun হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'যা কিছু'।</li> <li><b>(C) <u>What</u> book do you want?:</b> এখানে 'What' শব্দটি 'book' (একটি Noun) এর আগে বসেছে এবং কোন বইটি জানতে চাইছে তা প্রশ্ন করছে। এটি একটি Interrogative Adjective।</li> <li><b>(D) What do you want?:</b> এখানে 'What' Interrogative Pronoun হিসেবে ব্যবহৃত হয়েছে, কারণ এটি Noun এর পরিবর্তে বসেছে এবং নিজেই প্রশ্ন করছে।</li> </ul> <p>সুতরাং, 'What book do you want?' বাক্যে 'what' Interrogative Adjective হিসেবে ব্যবহৃত হয়েছে।</p>",
+        },
+        {
+          id: 34,
+          question: "The word 'Homely' belongs to what part of speech?",
+          options: {
+            a: "Noun",
+            b: "Adjective",
+            c: "Verb",
+            d: "Adverb",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Homely' শব্দের অর্থ 'ঘরের মতো আরামদায়ক', 'সাধারণ' বা 'আকর্ষণীয় নয়' (ব্যক্তিগত অর্থে)। এটি সাধারণত কোনো ব্যক্তি বা বস্তুর গুণ বা বৈশিষ্ট্য বোঝাতে ব্যবহৃত হয়।</p> <ul> <li><b>(A) Noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়। 'Home' Noun।</li> <li><b>(B) Adjective:</b> Adjective একটি noun বা pronoun কে modify করে। 'Homely' একটি Noun কে modify করে (যেমন: 'a homely meal', 'a homely person'), তাই এটি একটি Adjective।</li> <li><b>(C) Verb:</b> Verb কোনো কাজ করা বোঝায়।</li> <li><b>(D) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে। 'Homely' এর Adverb ফর্ম হলো 'homily' (যদিও এটি 'উপদেশ' অর্থে Noun হিসেবেও ব্যবহৃত হয়)।</li> </ul> <p>সুতরাং, 'Homely' একটি Adjective ।</p>",
+        },
+        {
+          id: 35,
+          question: "Which of the following pairs is not correct?",
+          options: {
+            a: "False - Falsify",
+            b: "Able - Enable",
+            c: "Sure - Ensure",
+            d: "Weak - Weakly",
+          },
+          correct: "d",
+          explanation:
+            "<p>এই প্রশ্নটি শব্দের Adjective এবং তার সম্পর্কিত Verb বা Adverb ফর্মের সঠিক জোড়া জানতে চাইছে।</p> <ul> <li><b>(A) False - Falsify:</b> 'False' (Adjective) এর Verb ফর্ম হলো 'Falsify' (মিথ্যা করা/প্রমাণ করা)। এটি সঠিক জোড়া।</li> <li><b>(B) Able - Enable:</b> 'Able' (Adjective) এর Verb ফর্ম হলো 'Enable' (সক্ষম করা)। এটি সঠিক জোড়া।</li> <li><b>(C) Sure - Ensure:</b> 'Sure' (Adjective) এর Verb ফর্ম হলো 'Ensure' (নিশ্চিত করা)। এটি সঠিক জোড়া।</li> <li><b>(D) Weak - Weakly:</b> 'Weak' (Adjective) এর Adverb ফর্ম হলো 'Weakly' (দুর্বলভাবে)। কিন্তু প্রশ্নটি একটি Adjective-Verb বা Adjective-Adverb পেয়ার বোঝাচ্ছে, যেখানে 'Weakly' Adverb। যদি এটি Noun-Adjective পেয়ার হতো, তবে এটি সঠিক হতো। যেহেতু 'Weak' একটি Adjective এবং 'Weakly' তার Adverb ফর্ম, এখানে কোনোVerb ফর্ম দেওয়া নেই। অন্যান্য অপশনে Adjective এর Verb ফর্ম দেওয়া হয়েছে। তাই এই জোড়াটি 'Adjective থেকে Verb' রূপান্তরের দিক থেকে সঠিক নয়। 'Weak' এর Verb ফর্ম হলো 'weaken'।</li> </ul> <p>সুতরাং, 'Weak - Weakly' জোড়াটি সঠিক নয় কারণ এটি Adjective থেকে Verb এর সম্পর্ক দেখাচ্ছে না, বরং Adjective থেকে Adverb এর সম্পর্ক দেখাচ্ছে।</p>",
+        },
+        {
+          id: 36,
+          question: "Correct adjective of the word 'contempt' -",
+          options: {
+            a: "Contemptation",
+            b: "Contemptible",
+            c: "Contemptable",
+            d: "Contempting",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Contempt' একটি Noun, যার অর্থ 'ঘৃণা' বা 'অবজ্ঞা'। এর Adjective ফর্ম খুঁজতে হবে যা 'ঘৃণ্য' বা 'অবজ্ঞার যোগ্য' বোঝায়।</p> <ul> <li><b>(A) Contemptation:</b> এটি কোনো সঠিক ইংরেজি শব্দ নয়।</li> <li><b>(B) Contemptible:</b> এটি 'Contempt' এর সঠিক Adjective ফর্ম, যার অর্থ 'ঘৃণার যোগ্য' বা 'অবজ্ঞেয়'। যেমন: 'His actions were contemptible.' (তার কাজগুলো ঘৃণার যোগ্য ছিল)।</li> <li><b>(C) Contemptable:</b> এটি 'Contemptible' এর ভুল বানান।</li> <li><b>(D) Contempting:</b> এটি 'Contempt' এর Present Participle Verb হিসেবে ব্যবহৃত হতে পারে, কিন্তু একটি স্থায়ী Adjective হিসেবে নয়।</li> </ul> <p>সুতরাং, 'Contempt' এর সঠিক Adjective ফর্ম হলো 'Contemptible' ।</p>",
+        },
+        {
+          id: 37,
+          question: "Select the sentence with a noun as a premodifier-",
+          options: {
+            a: "No passenger flight departed on that day",
+            b: "We enjoyed a fabulous outing in the evening",
+            c: "We booked a spacious room",
+            d: "We had a pleasant journey this time",
+          },
+          correct: "a",
+          explanation:
+            "<p>একটি Noun যখন অন্য একটি Noun এর আগে বসে সেটিকে modify করে, তখন তাকে Noun as a Premodifier বা Attributive Noun বলে।</p> <ul> <li><b>(A) No <u>passenger</u> flight departed on that day:</b> এখানে 'passenger' একটি Noun এবং এটি 'flight' (অন্য একটি Noun) এর আগে বসে 'flight' কে modify করছে। অর্থাৎ, এটি কোন ধরণের ফ্লাইট তা বোঝাচ্ছে। তাই 'passenger' এখানে Noun হিসেবে Premodifier এর কাজ করছে।</li> <li><b>(B) We enjoyed a <u>fabulous</u> outing in the evening:</b> এখানে 'fabulous' একটি Adjective এবং এটি 'outing' (Noun) কে modify করছে। এটি Noun as a Premodifier নয়।</li> <li><b>(C) We booked a <u>spacious</u> room:</b> এখানে 'spacious' একটি Adjective এবং এটি 'room' (Noun) কে modify করছে। এটি Noun as a Premodifier নয়।</li> <li><b>(D) We had a <u>pleasant</u> journey this time:</b> এখানে 'pleasant' একটি Adjective এবং এটি 'journey' (Noun) কে modify করছে। এটি Noun as a Premodifier নয়।</li> </ul> <p>সুতরাং, 'No passenger flight departed on that day' বাক্যে 'passenger' Noun হিসেবে Premodifier এর কাজ করছে।</p>",
+        },
+        {
+          id: 38,
+          question: "The teacher has repeated herself twice. Here 'twice' is-",
+          options: {
+            a: "Noun",
+            b: "Adverb",
+            c: "Adjective",
+            d: "Preposition",
+          },
+          correct: "b",
+          explanation:
+            "<p>এই বাক্যে 'twice' শব্দটি 'repeated' (একটি Verb) ক্রিয়াটিকে modify করছে এবং কতবার কাজটি হয়েছে (সংখ্যা) তা বোঝাচ্ছে। যখন একটি শব্দ কোনো ক্রিয়াকে modify করে এবং তার ধরন, কাল, স্থান বা সংখ্যা বোঝায়, তখন সেটি Adverb হয়।</p> <ul> <li><b>(A) Noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়।</li> <li><b>(B) Adverb:</b> Adverb একটি Verb কে modify করে। এখানে 'twice' হলো Adverb of Frequency, যা ক্রিয়াটি কতবার ঘটেছে তা নির্দেশ করে।</li> <li><b>(C) Adjective:</b> Adjective একটি noun বা pronoun কে modify করে।</li> <li><b>(D) Preposition:</b> Preposition একটি noun বা pronoun এর আগে বসে বাক্যের অন্য শব্দের সাথে তার সম্পর্ক স্থাপন করে।</li> </ul> <p>সুতরাং, 'twice' একটি Adverb ।</p>",
+        },
+        {
+          id: 39,
+          question: "What is the 'noun' form of the word 'beneficial'?",
+          options: {
+            a: "Beneficiary",
+            b: "Beneficient",
+            c: "Beneficialness",
+            d: "Benefit",
+          },
+          correct: "d",
+          explanation:
+            "<p>'Beneficial' একটি Adjective, যার অর্থ 'উপকারী' বা 'লাভজনক'। এর Noun ফর্ম খুঁজতে হবে যা 'উপকার' বা 'সুবিধা' বোঝায়।</p> <ul> <li><b>(A) Beneficiary:</b> এটি একটি Noun, যার অর্থ 'উপভোগকারী' বা 'সুবিধাভোগী'। এটি 'beneficial' এর Noun ফর্ম নয়, তবে সম্পর্কিত।</li> <li><b>(B) Beneficient:</b> এটি একটি Adjective, যার অর্থ 'উপকারী' বা 'পরোপকারী'।</li> <li><b>(C) Beneficialness:</b> যদিও এটি ব্যাকরণগতভাবে Noun হতে পারে, এটি খুব কম ব্যবহৃত হয় এবং 'Benefit' হল এর প্রচলিত Noun ফর্ম।</li> <li><b>(D) Benefit:</b> এটি 'Beneficial' এর সঠিক Noun ফর্ম, যার অর্থ 'উপকার', 'সুবিধা' বা 'লাভ'। এটি Verb হিসেবেও ব্যবহৃত হতে পারে। যেমন: 'The new policy is a great benefit.' (নতুন নীতিটি একটি বড় সুবিধা)।</li> </ul> <p>সুতরাং, 'Beneficial' এর সবচেয়ে উপযুক্ত Noun ফর্ম হলো 'Benefit' ।</p>",
+        },
+        {
+          id: 40,
+          question: "Which of the following is not a noun?",
+          options: {
+            a: "Softly",
+            b: "Livelihood",
+            c: "Responsibility",
+            d: "Friendliness",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমাদেরকে এমন একটি শব্দ খুঁজে বের করতে হবে যা Noun নয়।</p> <ul> <li><b>(A) Softly:</b> এটি একটি Adverb, যার অর্থ 'নরমভাবে' বা 'ধীরে ধীরে'। এটি 'soft' (Adjective) এর Adverb ফর্ম।</li> <li><b>(B) Livelihood:</b> এটি একটি Noun, যার অর্থ 'জীবিকা' বা 'জীবনধারণের উপায়'।</li> <li><b>(C) Responsibility:</b> এটি একটি Noun, যার অর্থ 'দায়িত্ব'।</li> <li><b>(D) Friendliness:</b> এটি একটি Noun, যার অর্থ 'বন্ধুত্বপূর্ণতা'। এটি 'friendly' (Adjective) এর Noun ফর্ম।</li> </ul> <p>সুতরাং, 'Softly' একটি Noun নয়, এটি একটি Adverb ।</p>",
+        },
+        {
+          id: 41,
+          question: "Are you an early riser? Here 'early' is:",
+          options: {
+            a: "Verb",
+            b: "Adverb",
+            c: "Noun",
+            d: "Adjective",
+          },
+          correct: "d",
+          explanation:
+            "<p>এই বাক্যে 'early' শব্দটি 'riser' (একটি Noun) কে modify করছে এবং 'riser' এর ধরন (যে তাড়াতাড়ি ওঠে) বোঝাচ্ছে। যখন একটি শব্দ কোনো Noun কে modify করে, তখন সেটি Adjective হয়।</p> <ul> <li><b>(A) Verb:</b> Verb কোনো কাজ করা বোঝায়।</li> <li><b>(B) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে। 'Early' Adverbও হতে পারে (যেমন: 'He woke up early'), কিন্তু এই বাক্যে তা নয়।</li> <li><b>(C) Noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়।</li> <li><b>(D) Adjective:</b> Adjective একটি Noun বা Pronoun কে modify করে। এখানে 'early' শব্দটি 'riser' Noun এর একটি বৈশিষ্ট্য বর্ণনা করছে, তাই এটি একটি Adjective।</li> </ul> <p>সুতরাং, এই বাক্যে 'early' একটি Adjective ।</p>",
+        },
+        {
+          id: 42,
+          question:
+            "The word 'right' has been used as a verb which of the following sentences?",
+          options: {
+            a: "It is a matter of right.",
+            b: "Serve him right.",
+            c: "It is such a fault that it will right itself.",
+            d: "He is the right man for the job.",
+          },
+          correct: "c",
+          explanation:
+            "<p>আমাদেরকে এমন বাক্য খুঁজে বের করতে হবে যেখানে 'right' Verb হিসেবে ব্যবহৃত হয়েছে। Verb কোনো কাজ করা বোঝায়।</p> <ul> <li><b>(A) It is a matter of right:</b> এখানে 'right' Noun হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'অধিকার'।</li> <li><b>(B) Serve him right:</b> এখানে 'right' Adverb হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'যোগ্য শাস্তি দেওয়া' বা 'ঠিকঠাকভাবে'।</li> <li><b>(C) It is such a fault that it will <u>right</u> itself:</b> এখানে 'right' Verb হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'সঠিক করা' বা 'শুদ্ধ করা'। বাক্যটির অর্থ হলো 'দোষটি এমন যে এটি নিজেই ঠিক হয়ে যাবে'।</li> <li><b>(D) He is the right man for the job:</b> এখানে 'right' Adjective হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'সঠিক'।</li> </ul> <p>সুতরাং, 'It is such a fault that it will right itself' বাক্যে 'right' Verb হিসেবে ব্যবহৃত হয়েছে।</p>",
+        },
+        {
+          id: 43,
+          question:
+            "In which of the following sentences 'but' is used as preposition?",
+          options: {
+            a: "There is no one but likes him.",
+            b: "We tried hard but did not succeed.",
+            c: "It is but right to admit our faults.",
+            d: "None but the brave deserves the fair.",
+          },
+          correct: "d",
+          explanation:
+            "<p>'But' বিভিন্ন Part of Speech হিসেবে ব্যবহৃত হতে পারে। Preposition হিসেবে 'but' এর অর্থ হয় 'except' বা 'ব্যতীত'।</p> <ul> <li><b>(A) There is no one <u>but</u> likes him:</b> এখানে 'but' Relative Pronoun (who/that not) হিসেবে ব্যবহৃত হয়েছে। এর অর্থ 'এমন কেউ নেই যে তাকে পছন্দ করে না'।</li> <li><b>(B) We tried hard <u>but</u> did not succeed:</b> এখানে 'but' Conjunction হিসেবে ব্যবহৃত হয়েছে, দুটি ক্লজকে যুক্ত করছে এবং একটি বৈপরীত্য দেখাচ্ছে। এর অর্থ 'কিন্তু'।</li> <li><b>(C) It is <u>but</u> right to admit our faults:</b> এখানে 'but' Adverb হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'only' বা 'কেবলমাত্র'।</li> <li><b>(D) None <u>but</u> the brave deserves the fair:</b> এখানে 'but' Preposition হিসেবে ব্যবহৃত হয়েছে, যার অর্থ 'except' বা 'ব্যতীত'। বাক্যটির অর্থ 'সাহসীরা ছাড়া আর কেউ সুন্দরী পায় না'। এখানে 'but' এর পরে 'the brave' (Noun Phrase) বসেছে এবং 'none' এর সাথে সম্পর্ক স্থাপন করছে।</li> </ul> <p>সুতরাং, 'None but the brave deserves the fair' বাক্যে 'but' Preposition হিসেবে ব্যবহৃত হয়েছে।</p>",
+        },
+        {
+          id: 44,
+          question: "Which one of the following is not a noun?",
+          options: {
+            a: "Loneliness",
+            b: "Childhood",
+            c: "Purity",
+            d: "Fairly",
+          },
+          correct: "d",
+          explanation:
+            "<p>আমাদেরকে এমন একটি শব্দ খুঁজে বের করতে হবে যা Noun নয়।</p> <ul> <li><b>(A) Loneliness:</b> এটি একটি Noun, যার অর্থ 'একাকীত্ব'। এটি 'lonely' (Adjective) থেকে এসেছে।</li> <li><b>(B) Childhood:</b> এটি একটি Noun, যার অর্থ 'শৈশব'। এটি 'child' (Noun) থেকে এসেছে।</li> <li><b>(C) Purity:</b> এটি একটি Noun, যার অর্থ 'বিশুদ্ধতা'। এটি 'pure' (Adjective) থেকে এসেছে।</li> <li><b>(D) Fairly:</b> এটি একটি Adverb, যার অর্থ 'ন্যায্যভাবে', 'মোটামুটিভাবে' বা 'বেশ'। এটি 'fair' (Adjective) এর Adverb ফর্ম।</li> </ul> <p>সুতরাং, 'Fairly' একটি Noun নয়, এটি একটি Adverb ।</p>",
+        },
+        {
+          id: 45,
+          question:
+            "He was wise enough to accept the other. Here 'enough' is -",
+          options: {
+            a: "Adjective",
+            b: "Preposition",
+            c: "Conjunction",
+            d: "Adverb",
+          },
+          correct: "d",
+          explanation:
+            "<p>এই বাক্যে 'enough' শব্দটি 'wise' (একটি Adjective) কে modify করছে এবং 'জ্ঞানী' হওয়ার মাত্রা বোঝাচ্ছে। যখন 'enough' একটি Adjective বা Adverb এর পরে বসে সেটিকে modify করে, তখন এটি Adverb হয়।</p> <ul> <li><b>(A) Adjective:</b> Adjective একটি noun বা pronoun কে modify করে। 'Enough' Adjectiveও হতে পারে (যেমন: 'enough money'), কিন্তু এখানে এটি Adjective কে modify করছে।</li> <li><b>(B) Preposition:</b> Preposition একটি noun বা pronoun এর আগে বসে বাক্যের অন্য শব্দের সাথে তার সম্পর্ক স্থাপন করে।</li> <li><b>(C) Conjunction:</b> Conjunction দুটি শব্দ, বাক্য বা ক্লজকে যুক্ত করে।</li> <li><b>(D) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে। এখানে 'enough' হলো Adverb of Degree, যা 'wise' এর মাত্রা নির্দেশ করছে।</li> </ul> <p>সুতরাং, 'enough' এই বাক্যে একটি Adverb ।</p>",
+        },
+        {
+          id: 46,
+          question: "What is the adjective form of the word 'home'?",
+          options: {
+            a: "Homelike",
+            b: "Homeful",
+            c: "Homely",
+            d: "Homege",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Home' একটি Noun, যার অর্থ 'বাড়ি'। এর Adjective ফর্ম খুঁজতে হবে যা 'বাড়ির মতো' বা 'গৃহস্থালি' অর্থে ব্যবহৃত হয়।</p> <ul> <li><b>(A) Homelike:</b> এটি একটি Adjective, যার অর্থ 'বাড়ির মতো আরামদায়ক' বা 'ঘরোয়া'। এটি একটি সম্ভাব্য সঠিক উত্তর।</li> <li><b>(B) Homeful:</b> এটি কোনো সঠিক ইংরেজি শব্দ নয়।</li> <li><b>(C) Homely:</b> এটি 'Home' এর একটি প্রচলিত Adjective ফর্ম, যার অর্থ 'ঘরের মতো আরামদায়ক', 'সাধারণ' বা (ব্যক্তির ক্ষেত্রে) 'আকর্ষণীয় নয়'। এটি 'বাড়ির' বা 'বাড়িসুলভ' বোঝাতে ব্যবহৃত হয়। এটি 'Chorcha.net' বা 'Satt Academy' এর মতো বাংলাদেশি সাইটগুলিতে প্রায়শই 'home' এর Adjective হিসেবে উল্লেখ করা হয়।</li> <li><b>(D) Homege:</b> এটি কোনো সঠিক ইংরেজি শব্দ নয়। (সম্ভবত 'homage' এর ভুল বানান, যার অর্থ শ্রদ্ধা)।</li> </ul> <p>যদিও 'Homelike' ও 'Homely' উভয়ই 'Home' এর Adjective হতে পারে, 'Homely' একটি অধিক ব্যবহৃত এবং পরিচিত রূপ। বিশেষত বাংলাদেশি শিক্ষামূলক প্ল্যাটফর্মে 'Homely' কেই বেশি গুরুত্ব দেওয়া হয়।</p>",
+        },
+        {
+          id: 47,
+          question:
+            "He was wise enough to accept the other. Here 'enough' is -",
+          options: {
+            a: "Adjective",
+            b: "Preposition",
+            c: "Conjunction",
+            d: "Adverb",
+          },
+          correct: "d",
+          explanation:
+            "<p>এই বাক্যে 'enough' শব্দটি 'wise' (একটি Adjective) কে modify করছে এবং 'জ্ঞানী' হওয়ার মাত্রা বোঝাচ্ছে। যখন 'enough' একটি Adjective বা Adverb এর পরে বসে সেটিকে modify করে, তখন এটি Adverb হয়।</p> <ul> <li><b>(A) Adjective:</b> Adjective একটি noun বা pronoun কে modify করে। 'Enough' Adjectiveও হতে পারে (যেমন: 'enough money'), কিন্তু এখানে এটি Adjective কে modify করছে।</li> <li><b>(B) Preposition:</b> Preposition একটি noun বা pronoun এর আগে বসে বাক্যের অন্য শব্দের সাথে তার সম্পর্ক স্থাপন করে।</li> <li><b>(C) Conjunction:</b> Conjunction দুটি শব্দ, বাক্য বা ক্লজকে যুক্ত করে।</li> <li><b>(D) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে। এখানে 'enough' হলো Adverb of Degree, যা 'wise' এর মাত্রা নির্দেশ করছে।</li> </ul> <p>সুতরাং, 'enough' এই বাক্যে একটি Adverb ।</p>",
+        },
+        {
+          id: 48,
+          question: "All spoke in his favour. Here the word 'All' is a/an-",
+          options: {
+            a: "Noun",
+            b: "Adverb",
+            c: "Pronoun",
+            d: "Adjective",
+          },
+          correct: "c",
+          explanation:
+            "<p>এই বাক্যে 'All' শব্দটি নির্দিষ্ট কোনো Noun এর পরিবর্তে বসেছে এবং 'সবাই' বা 'সকল ব্যক্তি' বোঝাচ্ছে। যখন একটি শব্দ Noun এর পরিবর্তে বসে, তখন সেটি Pronoun হয়।</p> <ul> <li><b>(A) Noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়।</li> <li><b>(B) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে।</li> <li><b>(C) Pronoun:</b> Pronoun Noun এর পরিবর্তে বসে। এখানে 'All' একটি Indefinite Pronoun হিসেবে কাজ করছে, যা অনির্দিষ্ট সংখ্যক ব্যক্তিকে বোঝায়।</li> <li><b>(D) Adjective:</b> Adjective একটি noun বা pronoun কে modify করে। 'All' Adjectiveও হতে পারে (যেমন: 'All students are present'), কিন্তু এখানে এটি Noun কে modify না করে নিজেই Noun এর পরিবর্তে বসেছে।</li> </ul> <p>সুতরাং, 'All' এই বাক্যে একটি Pronoun ।</p>",
+        },
+        {
+          id: 49,
+          question: "What parts of speech is the word 'Extraordinary'?",
+          options: {
+            a: "Noun",
+            b: "Verb",
+            c: "Adjective",
+            d: "Adverb",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Extraordinary' শব্দের অর্থ 'অসাধারণ', 'অসাধারণ ক্ষমতা সম্পন্ন' বা 'সাধারণের বাইরে'। এটি সাধারণত কোনো ব্যক্তি বা বস্তুর গুণ বা বৈশিষ্ট্য বোঝাতে ব্যবহৃত হয়।</p> <ul> <li><b>(A) Noun:</b> Noun কোনো ব্যক্তি, বস্তু, স্থান বা ধারণার নাম বোঝায়। 'Extraordinariness' Noun হতে পারে।</li> <li><b>(B) Verb:</b> Verb কোনো কাজ করা বোঝায়।</li> <li><b>(C) Adjective:</b> Adjective একটি noun বা pronoun কে modify করে এবং তার গুণ, অবস্থা, সংখ্যা বা পরিমাণ নির্দেশ করে। 'Extraordinary' একটি Noun কে modify করে (যেমন: 'an extraordinary talent', 'extraordinary effort'), তাই এটি একটি Adjective।</li> <li><b>(D) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে। 'Extraordinarily' হলে সেটি Adverb হতো।</li> </ul> <p>সুতরাং, 'Extraordinary' একটি Adjective ।</p>",
+        },
+        {
+          id: 50,
+          question:
+            "\"There is no mother but loves her child\". Here 'but' is-",
+          options: {
+            a: "conjunction",
+            b: "adjective",
+            c: "negative relative",
+            d: "adverb",
+          },
+          correct: "c",
+          explanation:
+            "<p>এই বাক্যে 'but' একটি বিশেষ অর্থে ব্যবহৃত হয়েছে। 'There is no mother but loves her child' বাক্যটির অর্থ হলো 'এমন কোনো মা নেই যে তার সন্তানকে ভালোবাসে না'। এখানে 'but' শব্দটি 'who/that ... not' এর মতো কাজ করছে।</p> <ul> <li><b>(A) Conjunction:</b> Conjunction দুটি বাক্য বা ক্লজকে যুক্ত করে। এখানে 'but' সরাসরি দুটি ক্লজকে যুক্ত করছে না, বরং একটি নেতিবাচক সম্পর্ক স্থাপন করছে।</li> <li><b>(B) Adjective:</b> Adjective একটি Noun বা Pronoun কে modify করে। 'But' এখানে Adjective হিসেবে কাজ করছে না।</li> <li><b>(C) Negative relative:</b> এখানে 'but' একটি Negative Relative Pronoun হিসেবে কাজ করছে, যার অর্থ 'who...not' বা 'that...not'। এটি 'mother' কে নির্দেশ করছে এবং একটি নেতিবাচক অর্থ বহন করছে। এই ব্যবহারটি পুরোনো ইংরেজিতে বেশি প্রচলিত ছিল।</li> <li><b>(D) Adverb:</b> Adverb একটি verb, adjective বা অন্য একটি adverb কে modify করে। 'But' এখানে Adverb হিসেবে কাজ করছে না।</li> </ul> <p>সুতরাং, 'but' এই বাক্যে একটি Negative Relative হিসেবে ব্যবহৃত হয়েছে।</p>",
+        },
+        {
+          id: 51,
+          question: "The flight is leaving shortly. Here 'shortly' is-",
+          options: {
+            a: "a subject",
+            b: "an adverbial",
+            c: "a complement",
+            d: "an adjective",
+          },
+          correct: "b",
+          explanation:
+            "<p>এই বাক্যে 'shortly' শব্দটি 'leaving' (একটি Verb) ক্রিয়াটিকে modify করছে এবং কখন ফ্লাইটটি ছাড়ছে (সময়কাল) তা বোঝাচ্ছে। এটি বাক্যে একটি Adverb এর মতো কাজ করছে, যা ক্রিয়া সম্পর্কে অতিরিক্ত তথ্য দেয়। একটি Adverbial হল এমন একটি শব্দ বা ফ্রেজ যা একটি ক্রিয়াকে modify করে বা একটি ক্রিয়াকে কীভাবে, কখন, কোথায় বা কেন ঘটছে তা ব্যাখ্যা করে।</p> <ul> <li><b>(A) A subject:</b> Subject হলো বাক্যে যে কাজ করে বা যার সম্পর্কে বলা হয়। এখানে Subject হলো 'The flight'।</li> <li><b>(B) An adverbial:</b> Adverbial হলো একটি শব্দ বা ফ্রেজ যা Adverb এর মতো কাজ করে এবং সাধারণত একটি Verb, Adjective বা অন্য একটি Adverb কে modify করে। 'Shortly' এখানে 'leaving' ক্রিয়াকে modify করছে এবং সময় নির্দেশ করছে, তাই এটি একটি Adverbial of Time।</li> <li><b>(C) A complement:</b> Complement বাক্যের Subject বা Object সম্পর্কে অতিরিক্ত তথ্য দেয়। যেমন: 'He is a <i>doctor</i>' (doctor হলো complement)।</li> <li><b>(D) An adjective:</b> Adjective একটি Noun বা Pronoun কে modify করে। 'Shortly' এখানে Noun কে modify করছে না।</li> </ul> <p>সুতরাং, 'shortly' এই বাক্যে একটি Adverbial ।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                                          <label class="option" data-option="${option}">
+                                                                            <div class="circle">${option}</div>
+                                                                            <span class="option-text">${question.options[option]}</span>
+                                                                          </label>
+                                                                        `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                             <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                             <div class="explanation-content">
+                                                                               <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                               ${question.explanation}
+                                                                             </div>
+                                                                           </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                        <p class="question-label">${
+                                                                          index +
+                                                                          1
+                                                                        }. ${
+            question.question
+          }</p>
+                                                                        <div class="options">
+                                                                          ${optionsHTML}
+                                                                        </div>
+                                                                        ${explanationHTML}
+                                                                      `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
